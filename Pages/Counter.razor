@@ -1,18 +1,31 @@
-﻿@page "/counter"
+﻿@page "/random"
 
-<PageTitle>Counter</PageTitle>
+@using DaddyJokes.Service;
 
-<h1>Counter</h1>
+@inject DaddyJokesService JokeApiService
 
-<p role="status">Current count: @currentCount</p>
+<PageTitle>Random Joke</PageTitle>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+<h1>Random Joke</h1>
+
+
+<button class="btn btn-primary" @onclick="GetJoke">New Joke</button>
+
+<div class="m-4">
+    <p role="status"> @newJoke</p>
+</div>
 
 @code {
-    private int currentCount = 0;
+    private string newJoke = string.Empty;
 
-    private void IncrementCount()
+    protected override async Task OnInitializedAsync()
     {
-        currentCount++;
+        await GetJoke();
+    }
+
+    private async Task GetJoke()
+    {
+        var currentJoke = await JokeApiService.GetRandomDaddyJokes();
+        newJoke = currentJoke.Joke;
     }
 }

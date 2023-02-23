@@ -1,6 +1,6 @@
+using DaddyJokes.Constants;
 using DaddyJokes.Data;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using DaddyJokes.Service;
 
 namespace DaddyJokes
 {
@@ -14,6 +14,12 @@ namespace DaddyJokes
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
             builder.Services.AddSingleton<WeatherForecastService>();
+            builder.Services.AddSingleton(sp =>
+            {
+                var configuration = sp.GetService<IConfiguration>();
+                var config = configuration.GetSection(DaddyJokeConstants.ConfigConstants.DaddyJokesConfig).Get<DaddyJokesConfig>();
+                return new DaddyJokesService(config.ApiUrl);
+            });
 
             var app = builder.Build();
 
