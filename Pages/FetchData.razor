@@ -1,5 +1,10 @@
 ﻿@page "/fetchdata"
 
+@using DaddyJokes.Service;
+@using DaddyJokes.Helpers;
+
+@inject DaddyJokesService JokeApiService
+
 <PageTitle>Weather forecast</PageTitle>
 
 @using DaddyJokes.Data
@@ -9,12 +14,11 @@
 
 <p>This component demonstrates fetching data from a service.</p>
 
+<button class="btn btn-primary" @onclick="GetJokes">New Joke</button>
+
 @if (forecasts == null)
 {
     <p><em>Loading...</em></p>
-}
-else
-{
     <table class="table">
         <thead>
             <tr>
@@ -41,8 +45,34 @@ else
 @code {
     private WeatherForecast[]? forecasts;
 
+    private IList<DaddyJokesOut> AllJokes;
+
+    private IList<DaddyJokesOut> MiniJokes;
+
+    private IList<DaddyJokesOut> MediumJokes;
+
+    private IList<DaddyJokesOut> LengthyJokes;
+
+    private string searchTerm;
+
     protected override async Task OnInitializedAsync()
     {
         forecasts = await ForecastService.GetForecastAsync(DateTime.Now);
+    }
+
+    private async Task GetJokes()
+    {
+        await GetJokesAsync();
+    }
+
+    private async Task GetJokesAsync(int pageNumber = 1, string searchTerm = null)
+    {
+        var jokes = await JokeApiService.GetDaddyJokes(pageNumber: pageNumber, limit: 30, searchTerm: searchTerm);
+        AllJokes = jokes.Items.ToArray();
+
+        var groupJokes = jokes.Items.GroupBy(x => WordCountHelper.Count(x.Joke)).ToDictionary(x => x.Key, y => y.AsEnumerable());
+        MiniJokes = groupJokes.Where(x => x.Key < 10).SelectMany(x => x.Value).ToArray();
+        MediumJokes = groupJokes.Where(x => x.Key >= 10 && x.Key < 20).SelectMany(x => x.Value).ToArray();
+        LengthyJokes = groupJokes.Where(x => x.Key >= 20).SelectMany(x => x.Value).ToArray();
     }
 }

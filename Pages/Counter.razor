@@ -9,7 +9,7 @@
 <h1>Random Joke</h1>
 
 
-<button class="btn btn-primary" @onclick="GetJoke">New Joke</button>
+<button class="btn btn-primary" @onclick="GetJokeAsync">New Joke</button>
 
 <div class="m-4">
     <p role="status"> @newJoke</p>
@@ -20,10 +20,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await GetJoke();
+        await GetJokeAsync();
     }
 
-    private async Task GetJoke()
+    private async Task GetJokeAsync()
     {
         var currentJoke = await JokeApiService.GetRandomDaddyJokes();
         newJoke = currentJoke.Joke;

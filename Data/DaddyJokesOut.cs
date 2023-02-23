@@ -2,7 +2,7 @@
 
 namespace DaddyJokes.Data
 {
-    public class RandomDaddyJokesOut
+    public class DaddyJokesOut
     {
         [JsonPropertyName("id")]
         public string Id { get; set; }
