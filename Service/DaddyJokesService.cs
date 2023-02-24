@@ -17,8 +17,10 @@ namespace DaddyJokes.Service
         public DaddyJokesService(IMemoryCache memoryCache, string apiUrl, string apiUserName = null, string apiPassword = null)
         {
             _cache = memoryCache;
-            _httpClient = new HttpClient();
-            _httpClient.BaseAddress = new Uri(apiUrl);
+            _httpClient = new HttpClient
+            {
+                BaseAddress = new Uri(apiUrl)
+            };
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(DaddyJokeConstants.UriConstants.ResponseTypeJson));
         }
 
