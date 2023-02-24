@@ -1,0 +1,179 @@
+﻿@page "/groupedjokes"
+
+@using DaddyJokes.Service;
+@using DaddyJokes.Helpers;
+
+@inject DaddyJokesService JokeApiService
+
+<PageTitle>Grouped Daddy Joke</PageTitle>
+
+@using DaddyJokes.Data
+
+<style>
+    .text-right {
+        text-align: right;
+    }
+</style>
+
+<h1>Search Daddy Jokes</h1>
+
+<div class="form-group">
+    <div class="input-group">
+        <input type="text" class="form-control" @bind-value="@searchTerm" placeholder="Search ..." />
+        <div class="btn btn-primary" @onclick="Search">Search</div>
+    </div>
+</div>
+
+@if (isLoading)
+{
+    <p class="text-center">Loading...</p>
+}
+else
+{
+    <h2> Mini Jokes (Having less than 10 words) </h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Jokes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!MiniJokes.Any())
+            {
+                <tr class="text-center"> 
+                    <td><h4>No jokes available</h4></td>
+                </tr>
+            }
+            @foreach (var joke in MiniJokes)
+            {
+                <tr>
+                    <td>@joke.Joke</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2> Mid Sized Jokes (Having between 10 and 20 words) </h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Jokes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!MediumJokes.Any())
+            {
+                <tr class="text-center">
+                    <td><h4>No jokes available</h4></td>
+                </tr>
+            }
+            @foreach (var joke in MediumJokes)
+            {
+                <tr>
+                    <td>@joke.Joke</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h2> Lengthy Jokes (Having greater than 20 words) </h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Jokes</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (!LengthyJokes.Any())
+            {
+                <tr class="text-center">
+                    <td><h4>No jokes available</h4></td>
+                </tr>
+            }
+            @foreach (var joke in LengthyJokes)
+            {
+                <tr>
+                    <td>@joke.Joke</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="row">
+        <div class="col-6">
+            <button class="btn btn-primary" disabled="@IsFirstPage" @onclick="GoToPreviousPage">Previous</button>
+        </div>
+        <div class="col-6 text-right">
+            <button class="btn btn-primary" disabled="@IsLastPage" @onclick="GoToNextPage">Next</button>
+        </div>
+    </div>
+
+    <p class="text-center">Page @currentPage of @TotalPages</p>
+}
+
+@code {
+    private int currentPage = 1;
+
+    private int pageSize = 30;
+
+    private bool IsLastPage => currentPage == TotalPages;
+
+    private bool IsFirstPage => currentPage == 1;
+
+    private bool isLoading = false;
+
+    private int TotalPages = 1;
+
+    private IList<DaddyJokesOut> AllJokes;
+
+    private IList<DaddyJokesOut> MiniJokes;
+
+    private IList<DaddyJokesOut> MediumJokes;
+
+    private IList<DaddyJokesOut> LengthyJokes;
+
+    private string searchTerm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetJokesAsync();
+    }
+
+    private async Task GoToPreviousPage()
+    {
+        currentPage--;
+        await GetJokesAsync();
+
+    }
+
+    private async Task GoToNextPage()
+    {
+        currentPage++;
+        await GetJokesAsync();
+
+    }
+
+    private async Task Search()
+    {
+        currentPage = 1;
+        await GetJokesAsync();
+    }
+
+    private async Task GetJokesAsync()
+    {
+        isLoading = true;
+
+        // Fetch data from the Server
+        var jokes = await JokeApiService.GetDaddyJokesAsync(currentPage, pageSize, searchTerm);
+
+        AllJokes = jokes.Items.ToArray();
+        TotalPages = jokes.TotalPages;
+
+        // Grouping the jokes
+        var groupJokes = jokes.Items.GroupBy(x => WordCountHelper.Count(x.Joke)).ToDictionary(x => x.Key, y => y.AsEnumerable());
+        MiniJokes = groupJokes.Where(x => x.Key < 10).SelectMany(x => x.Value).ToArray();
+        MediumJokes = groupJokes.Where(x => x.Key >= 10 && x.Key < 20).SelectMany(x => x.Value).ToArray();
+        LengthyJokes = groupJokes.Where(x => x.Key >= 20).SelectMany(x => x.Value).ToArray();
+        isLoading = false;
+    }
+}

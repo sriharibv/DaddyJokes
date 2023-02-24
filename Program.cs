@@ -1,6 +1,7 @@
 using DaddyJokes.Constants;
 using DaddyJokes.Data;
 using DaddyJokes.Service;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DaddyJokes
 {
@@ -13,12 +14,16 @@ namespace DaddyJokes
             // Add services to the container.
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
-            builder.Services.AddSingleton<WeatherForecastService>();
+
+            //Injecting memory cache that we use it in the DaddyJokesService
+            builder.Services.AddMemoryCache();
+
             builder.Services.AddSingleton(sp =>
             {
+                var memorycache = sp.GetRequiredService<IMemoryCache>();
                 var configuration = sp.GetService<IConfiguration>();
                 var config = configuration.GetSection(DaddyJokeConstants.ConfigConstants.DaddyJokesConfig).Get<DaddyJokesConfig>();
-                return new DaddyJokesService(config.ApiUrl);
+                return new DaddyJokesService(memorycache, config.ApiUrl);
             });
 
             var app = builder.Build();

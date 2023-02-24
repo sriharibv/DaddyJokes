@@ -2,7 +2,7 @@
 using DaddyJokes.Constants;
 using DaddyJokes.Data;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using static DaddyJokes.Constants.DaddyJokeConstants;
 
 namespace DaddyJokes.Service
@@ -11,8 +11,12 @@ namespace DaddyJokes.Service
     {
         private readonly HttpClient _httpClient;
 
-        public DaddyJokesService(string apiUrl, string apiUserName = null, string apiPassword = null)
+        //We can implement distributed cache here.
+        private readonly IMemoryCache _cache;
+
+        public DaddyJokesService(IMemoryCache memoryCache, string apiUrl, string apiUserName = null, string apiPassword = null)
         {
+            _cache = memoryCache;
             _httpClient = new HttpClient();
             _httpClient.BaseAddress = new Uri(apiUrl);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(DaddyJokeConstants.UriConstants.ResponseTypeJson));
@@ -22,7 +26,6 @@ namespace DaddyJokes.Service
         {
             try
             {
-
                 var response = await _httpClient.GetAsync(string.Empty);
                 EnsureSucessStatusCode(response);
                 return await response?.Content?.ReadFromJsonAsync<DaddyJokesOut>();
@@ -33,24 +36,29 @@ namespace DaddyJokes.Service
             }
         }
 
-        public async Task<Datatable<DaddyJokesOut>> GetDaddyJokes(int pageNumber = 1, int limit = 30, string searchTerm = null)
+        public async Task<Datatable<DaddyJokesOut>> GetDaddyJokesAsync(int pageNumber = 1, int limit = 30, string searchTerm = null)
         {
+            var cacheKey = string.IsNullOrEmpty(searchTerm) ? string.Format(Default, pageNumber) : $"{searchTerm}_{PageNumberConstant}_{pageNumber}";
             try
             {
-                var kvp = new List<KeyValuePair<string, string>>
+                return await _cache.GetOrCreateAsync(cacheKey, async entry =>
                 {
-                    new KeyValuePair<string, string>("page", pageNumber.ToString()),
-                    new KeyValuePair<string, string>("limit", limit.ToString()),
-                };
-                if (!string.IsNullOrEmpty(searchTerm))
-                    kvp.Add(new KeyValuePair<string, string>("term", searchTerm));
+                    entry.SlidingExpiration = TimeSpan.FromMinutes(5);
 
-                var query = new QueryBuilder(kvp).ToQueryString();
-                var requestUri = UriConstants.Search + query;
-                var response = await _httpClient.GetAsync(requestUri);
-                EnsureSucessStatusCode(response);
-                var data = await response?.Content?.ReadFromJsonAsync<Datatable<DaddyJokesOut>>();
-                return data;
+                    var kvp = new List<KeyValuePair<string, string>>
+                    {
+                        new KeyValuePair<string, string>("page", pageNumber.ToString()),
+                        new KeyValuePair<string, string>("limit", limit.ToString()),
+                    };
+                    if (!string.IsNullOrEmpty(searchTerm))
+                        kvp.Add(new KeyValuePair<string, string>("term", searchTerm));
+
+                    var query = new QueryBuilder(kvp).ToQueryString();
+                    var requestUri = UriConstants.Search + query;
+                    var response = await _httpClient.GetAsync(requestUri);
+                    EnsureSucessStatusCode(response);
+                    return await response?.Content?.ReadFromJsonAsync<Datatable<DaddyJokesOut>>();
+                });
             }
             catch (Exception ex)
             {
