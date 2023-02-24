@@ -47,11 +47,11 @@ namespace DaddyJokes.Service
 
                     var kvp = new List<KeyValuePair<string, string>>
                     {
-                        new KeyValuePair<string, string>("page", pageNumber.ToString()),
-                        new KeyValuePair<string, string>("limit", limit.ToString()),
+                        new KeyValuePair<string, string>(UriConstants.Page, pageNumber.ToString()),
+                        new KeyValuePair<string, string>(UriConstants.Limit, limit.ToString()),
                     };
                     if (!string.IsNullOrEmpty(searchTerm))
-                        kvp.Add(new KeyValuePair<string, string>("term", searchTerm));
+                        kvp.Add(new KeyValuePair<string, string>(UriConstants.Term, searchTerm));
 
                     var query = new QueryBuilder(kvp).ToQueryString();
                     var requestUri = UriConstants.Search + query;

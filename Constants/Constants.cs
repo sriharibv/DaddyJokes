@@ -9,6 +9,10 @@
         {
             public const string ResponseTypeJson = "application/json";
             public const string Search = "search";
+
+            public const string Page = "page";
+            public const string Limit = "limit";
+            public const string Term = "term";
         }
 
         public class ConfigConstants
