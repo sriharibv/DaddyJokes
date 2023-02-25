@@ -14,23 +14,17 @@ namespace DaddyJokes.Service
         //We can implement distributed cache here.
         private readonly IMemoryCache _cache;
 
-        public DaddyJokesService(IMemoryCache memoryCache, string apiUrl, string apiUserName = null, string apiPassword = null)
+        public DaddyJokesService(IServiceScope serviceProvider)
         {
-            _cache = memoryCache;
-            _httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(apiUrl)
-            };
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(DaddyJokeConstants.UriConstants.ResponseTypeJson));
+            _cache = serviceProvider.ServiceProvider.GetRequiredService<IMemoryCache>();
+            _httpClient = serviceProvider.ServiceProvider.GetRequiredService<HttpClient>();
         }
 
         public async Task<DaddyJokesOut> GetRandomDaddyJokes()
         {
             try
             {
-                var response = await _httpClient.GetAsync(string.Empty);
-                EnsureSucessStatusCode(response);
-                return await response?.Content?.ReadFromJsonAsync<DaddyJokesOut>();
+                return await _httpClient.GetFromJsonAsync<DaddyJokesOut>(string.Empty);
             }
             catch (Exception ex)
             {
@@ -57,9 +51,7 @@ namespace DaddyJokes.Service
 
                     var query = new QueryBuilder(kvp).ToQueryString();
                     var requestUri = UriConstants.Search + query;
-                    var response = await _httpClient.GetAsync(requestUri);
-                    EnsureSucessStatusCode(response);
-                    return await response?.Content?.ReadFromJsonAsync<Datatable<DaddyJokesOut>>();
+                    return await _httpClient.GetFromJsonAsync<Datatable<DaddyJokesOut>>(requestUri);
                 });
             }
             catch (Exception ex)

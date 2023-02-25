@@ -1,7 +1,9 @@
+using System.Net.Http.Headers;
 using DaddyJokes.Constants;
 using DaddyJokes.Data;
 using DaddyJokes.Service;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DaddyJokes
 {
@@ -15,16 +17,22 @@ namespace DaddyJokes
             builder.Services.AddRazorPages();
             builder.Services.AddServerSideBlazor();
 
+            builder.Services.AddScoped(sp =>
+            {
+                var configuration = sp.GetService<IConfiguration>();
+                var config = configuration.GetSection(DaddyJokeConstants.ConfigConstants.DaddyJokesConfig).Get<DaddyJokesConfig>();
+                var httpClient = new HttpClient()
+                {
+                    BaseAddress = new Uri(config.ApiUrl)
+                };
+                httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(DaddyJokeConstants.UriConstants.ResponseTypeJson));
+                return httpClient;
+            });
+
             //Injecting memory cache that we use it in the DaddyJokesService
             builder.Services.AddMemoryCache();
 
-            builder.Services.AddSingleton(sp =>
-            {
-                var memorycache = sp.GetRequiredService<IMemoryCache>();
-                var configuration = sp.GetService<IConfiguration>();
-                var config = configuration.GetSection(DaddyJokeConstants.ConfigConstants.DaddyJokesConfig).Get<DaddyJokesConfig>();
-                return new DaddyJokesService(memorycache, config.ApiUrl);
-            });
+            builder.Services.AddSingleton(sp => new DaddyJokesService(sp.CreateScope()));
 
             var app = builder.Build();
 
